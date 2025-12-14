@@ -3,18 +3,22 @@ import { usersRouter } from "./users/router.js"
 import express from 'express'
 
 const app = express()
-const PORT = 3000
-
-sequelize.sync({ force: true }).then(() => console.log('db is ready'))
+const PORT = process.env.PORT || 3000
 
 app.use(express.json())
 app.use('/api/users', usersRouter)
-app.use('/health',(req,res)=>{
-    res.status(200).json({status:'ok'});
-});
 
-const server = app.listen(PORT, () => {
-    console.log('Server running on port', PORT)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' })
 })
 
-export { app, server }
+async function startServer() {
+  await sequelize.sync({ force: true })
+  console.log('db is ready')
+
+  return app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+  })
+}
+
+export { app, startServer }
