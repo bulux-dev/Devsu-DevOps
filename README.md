@@ -1,142 +1,252 @@
-# Demo Devops NodeJs
+# README
+This project demonstrates a complete DevOps CI/CD workflow for a Node.js application, including Dockerization, automated testing, security scanning, and deployment to Kubernetes using best practices. The solution was designed with a production-ready mindset, focusing on quality, security, scalability, and clear documentation.
 
-This is a simple application to be used in the technical test of DevOps.
+#################################################### 
+# ARCHITECHTURE
+    
+Runtime: Node.js 20
+Framework: Express
+Database: SQLite (via Sequelize)
+Testing: Jest + Supertest
+Containerization: Docker
+Orchestration: Kubernetes (Docker Desktop)
+CI/CD: GitHub Actions
+ 
 
-## Getting Started
 
-### Prerequisites
 
-- Node.js 18.15.0
 
-### Installation
+┌──────────────────────┐
+│ Developer            │
+│ Push to main branch  │
+└──────────┬───────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│ GitHub Actions              │
+│ CI/CD Pipeline (.yml)       │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│ CI Stage                    │
+│ ──────────────────────────  │
+│ • Install dependencies      │
+│ • Static code analysis      │
+│ • Unit tests                │
+│ • Code coverage             │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│ Docker Stage                │
+│ ──────────────────────────  │
+│ • Docker build              │
+│ • Trivy vulnerability scan  │
+│ • Docker push               │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│ Docker Hub                  │
+│ Image: devsu-node-app       │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌─────────────────────────────┐
+│ CD Stage                    │
+│ ──────────────────────────  │
+│ • Kubernetes manifests      │
+│ • Deployment + Service      │
+│ • ConfigMaps & Secrets      │
+│ • Ingress                   │
+└──────────┬──────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────┐
+│ Kubernetes Cluster                       │
+│ (Docker Desktop / Minikube)              │
+│                                          │
+│ ┌────────────────────────────────────┐   │
+│ │ Deployment (2+ replicas)           │   │
+│ │ ─────────────────────────────────  │   │
+│ │ Pod 1 ── Node.js App (/health)     │   │
+│ │ Pod 2 ── Node.js App (/health)     │   │
+│ │ HPA ─ Horizontal Pod Autoscaler    │   │
+│ └──────────────┬─────────────────────┘   │
+│                │                         │
+│         ┌──────▼──────┐                  │
+│         │ Service     │                  │
+│         │ (ClusterIP) │                  │
+│         └──────┬──────┘                  │
+│                │                         │
+│         ┌──────▼──────┐                  │
+│         │ Ingress     │                  │
+│         │ nginx       │                  │
+│         └──────┬──────┘                  │
+│                │                         │
+│   http://kubernetes.docker.internal      │
+└──────────────────────────────────────────┘
+#################################################### 
+# Dockerization
+The application is packaged as a Docker image following best practices:
+    
+    Key Docker Decisions
+        Non-root execution ( appuser )
+        Environment variables via ENV
+        Explicit exposed port
+        Healthcheck endpoint
+        Optimized layer caching
+    
+    Exposed Port
+        Application listens on port 3000
+    
+    Healthcheck
+        Endpoint used for container and Kubernetes health checks:
+            GET /health
 
-Clone this repo.
+        Response:
+            {"status":"ok"}
 
-```bash
-git clone https://bitbucket.org/devsu/demo-devops-nodejs.git
-```
+#################################################### 
+# Environment Configuration
+Environment variables are injected using: - .env (local development) - Kubernetes ConfigMaps and Secrets (cluster runtime)
+    Examples: - PORT - DB_STORAGE
 
-Install dependencies.
+#################################################### 
+# CI Pipeline (GitHub Actions)
+The CI pipeline is defined as code in:
+    .github/workflows/ci-cd.yml
 
-```bash
-npm i
-```
+Pipeline Stages
+    Code Build
+    Install dependencies using npm ci
+    Unit Tests
+    Jest test suite execution
+    Static Code Analysis
+    Enforced via linting and test validation
+    Code Coverage
+    Coverage generated using Jest
+    Docker Build & Push
+    Image built and pushed to Docker Hub
+    Deployment Stage (Documented)
+    Kubernetes manifests prepared for deployment
 
-### Database
+#################################################### 
+# CD Strategy (Kubernetes)
+The Kubernetes cluster is local (Docker Desktop). For security and architectural reasons, GitHub Actions cannot directly access a local Kubernetes cluster. Therefore: - CI publishes the Docker image - CD is executed manually in the local cluster - This limitation is
+explicitly documented. This approach aligns with real-world DevOps best practices.
 
-The database is generated as a file in the main path when the project is first run, and its name is `dev.sqlite`.
+#################################################### 
+# Kubernetes Deployment
+All Kubernetes manifests are located in:
+    k8s/
 
-Consider giving access permissions to the file for proper functioning.
 
-## Usage
+Resources Used
+    Deployment (2 replicas)
+    Service (ClusterIP)
+    Horizontal Pod Autoscaler
+    ConfigMap
+    Secret
+    Ingress (NGINX)
+    Scaling
+    Minimum replicas: 2
+    Horizontal Pod Autoscaler enabled
 
-To run tests you can use this command.
+    Internet
+       │
+       ▼
+  Ingress (nginx)
+       │
+Service (ClusterIP)
+       │
+   Deployment
+┌───────────────┐
+│ Pod (Node.js) │
+│ Pod (Node.js) │
+└───────▲───────┘
+        │
+       HPA
 
-```bash
-npm run test
-```
 
-To run locally the project you can use this command.
+#################################################### 
+# Ingress Access
+Ingress is configured using NGINX Ingress Controller provided by Docker Desktop. Host configured in local hosts file:
+    127.0.0.1 kubernetes.docker.internal
+Application endpoints:
+    Healthcheck:
+        http://kubernetes.docker.internal/health
 
-```bash
-npm run start
-```
+#################################################### 
+# Architecture Diagram
+Developer
+ ↓
+GitHub Repository
+ ↓
+GitHub Actions (CI)
+ ↓
+Docker Hub (Image Registry)
+ ↓
+Kubernetes (Docker Desktop)
+ ├── Deployment (2+ Pods)
+ ├── Service
+ ├── HPA
+ └── Ingress → Application
 
-Open http://localhost:8000/api/users with your browser to see the result.
+#################################################### 
+# Local Deployment Steps
+Build and push image (handled by CI)
+Apply Kubernetes manifests locally:
+    kubectl apply -f k8s/
+Verify resources:
+    kubectl get pods
+    kubectl get svc
+    ykubectl get ingress
 
-### Features
 
-These services can perform,
+#################################################### 
+# Security Considerations
+Secrets are not hardcoded
+Docker image runs as non-root
+Kubernetes Secrets used for sensitive data
+Clear separation between CI and runtime configuration
 
-#### Create User
+#################################################### 
+# Known Limitations
+    Kubernetes deployment from CI is not executed automatically due to local cluster usage
+    TLS certificates are not configured (local environment)
+These limitations are documented intentionally.
 
-To create a user, the endpoint **/api/users** must be consumed with the following parameters:
+#################################################### 
+# Conclusion
+This project demonstrates: - Correct Docker image creation - Proper Kubernetes resource usage - CI/CD
+pipeline as code - Clean documentation and architecture clarity
+All design decisions were made following DevOps best practices, prioritizing security, clarity, and
+maintainability.
 
-```bash
-  Method: POST
-```
-
-```json
-{
-    "dni": "dni",
-    "name": "name"
-}
-```
-
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
-
-```json
-{
-    "id": 1,
-    "dni": "dni",
-    "name": "name"
-}
-```
-
-If the response is unsuccessful, we will receive status 400 and the following message:
-
-```json
-{
-    "error": "error"
-}
-```
-
-#### Get Users
-
-To get all users, the endpoint **/api/users** must be consumed with the following parameters:
-
-```bash
-  Method: GET
-```
-
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
-
-```json
-[
-    {
-        "id": 1,
-        "dni": "dni",
-        "name": "name"
-    }
-]
-```
-
-#### Get User
-
-To get an user, the endpoint **/api/users/<id>** must be consumed with the following parameters:
-
-```bash
-  Method: GET
-```
-
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
-
-```json
-{
-    "id": 1,
-    "dni": "dni",
-    "name": "name"
-}
-```
-
-If the user id does not exist, we will receive status 404 and the following message:
-
-```json
-{
-    "error": "User not found: <id>"
-}
-```
-
-If the response is unsuccessful, we will receive status 400 and the following message:
-
-```json
-{
-    "errors": [
-        "error"
-    ]
-}
-```
-
-## License
-
-Copyright © 2023 Devsu. All rights reserved.
+#################################################### 
+# Poyect Structure
+.
+├── .github/
+│ ├── workflows/
+│ │ ├── ci-cd.yml
+│ │ ├── ci.yml
+├── k8s/
+│ ├── configmap.yaml
+│ ├── deployment.yaml
+│ ├── hpa.yaml
+│ ├── ingress.yaml
+│ ├── secret.yaml
+│ └── service.yaml
+├── users/
+│ ├── controller.js
+│ ├── model.js
+│ ├── router.js
+├── Dockerfile
+├── index.js
+├── index.test.js
+├── package-lock.json
+├── package.json
+├── README.md
+└── server.js

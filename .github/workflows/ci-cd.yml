@@ -24,6 +24,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Static code analysis (lint)
+        run: |
+          if [ -f package.json ] && npm run | grep -q lint; then
+            npm run lint
+          else
+            echo "Lint not configured, skipping"
+          fi
+
       - name: Run unit tests
         run: npm test
 
@@ -48,6 +56,17 @@ jobs:
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG .
 
+      # 🔐 Vulnerability Scan
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/devsu-node-app:latest
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$IMAGE_TAG
@@ -62,7 +81,5 @@ jobs:
 
       - name: Deploy info
         run: |
-          echo "Kubernetes deployment is executed locally."
-          echo "Manifests are located in k8s/ directory."
-
-          
+          echo "Kubernetes deployment is executed locally (Docker Desktop)."
+          echo "Manifests are located in the k8s/ directory."
