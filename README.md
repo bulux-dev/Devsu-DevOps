@@ -1,6 +1,11 @@
 # README
 This project demonstrates a complete DevOps CI/CD workflow for a Node.js application, including Dockerization, automated testing, security scanning, and deployment to Kubernetes using best practices. The solution was designed with a production-ready mindset, focusing on quality, security, scalability, and clear documentation.
 
+# GITHUB ACTIONS LINK
+https://github.com/bulux-dev/Devsu-DevOps/actions
+https://github.com/bulux-dev/Devsu-DevOps/actions/runs/20216985568
+https://github.com/bulux-dev/Devsu-DevOps/actions/runs/20216985552
+
 #################################################### 
 # ARCHITECHTURE
     
@@ -88,7 +93,7 @@ CI/CD: GitHub Actions
 │   http://kubernetes.docker.internal      │
 └──────────────────────────────────────────┘
 #################################################### 
-# Dockerization
+# DOCKERIZATION
 The application is packaged as a Docker image following best practices:
     
     Key Docker Decisions
@@ -109,12 +114,12 @@ The application is packaged as a Docker image following best practices:
             {"status":"ok"}
 
 #################################################### 
-# Environment Configuration
+# ENVIRONMENT CONFIGURATION
 Environment variables are injected using: - .env (local development) - Kubernetes ConfigMaps and Secrets (cluster runtime)
     Examples: - PORT - DB_STORAGE
 
 #################################################### 
-# CI Pipeline (GitHub Actions)
+# CI PIPELINE (GitHub Actions)
 The CI pipeline is defined as code in:
     .github/workflows/ci-cd.yml
 
@@ -131,6 +136,9 @@ Pipeline Stages
     Image built and pushed to Docker Hub
     Deployment Stage (Documented)
     Kubernetes manifests prepared for deployment
+
+Results can be reviewed in: 
+    https://github.com/bulux-dev/Devsu-DevOps/actions
 
 #################################################### 
 # CD Strategy (Kubernetes)
